@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SonaLuma Installer</title>
+<style>
+  :root {
+    --bg: #090d14;
+    --card: rgba(255, 255, 255, .045);
+    --line: rgba(255, 255, 255, .09);
+    --txt: #e9edf5;
+    --mut: #8b95a8;
+    --teal: #1fc3cf;
+    --ok: #3ed38a;
+    --org: #f0832a;
+    --red: #ff5a5f;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--txt);
+               font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 600px; margin: 0 auto; padding: 28px 16px 64px; }
+  h1 { margin: 0 0 22px; font-size: 26px; letter-spacing: .14em; font-weight: 700; }
+  h1 small { display: block; font-size: 11px; letter-spacing: .22em; color: var(--mut); font-weight: 500; margin-top: 2px; }
+  .glow { background: linear-gradient(90deg, var(--teal), #5fe0d2, #efd9a6, var(--org));
+          -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  .card.dim { opacity: .45; pointer-events: none; }
+  .card h2 { margin: 0 0 12px; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--mut); }
+  p { margin: 6px 0; }
+  .mut { color: var(--mut); }
+  .devs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 460px) { .devs { grid-template-columns: 1fr; } }
+  .dev { border: 1px solid var(--line); border-radius: 12px; padding: 12px; cursor: pointer; display: block;
+         background: rgba(255, 255, 255, .03); }
+  .dev input { display: none; }
+  .dev b { display: block; font-size: 16px; }
+  .dev span { color: var(--mut); font-size: 13px; }
+  .dev:has(input:checked) { border-color: var(--teal); box-shadow: 0 0 0 1px var(--teal), 0 0 14px rgba(31, 195, 207, .25); }
+  .dev.off { opacity: .45; cursor: not-allowed; }
+  button { font: 600 15px system-ui, sans-serif; letter-spacing: .06em; color: #07262a; border: 0; border-radius: 999px;
+           padding: 11px 26px; cursor: pointer; background: linear-gradient(90deg, var(--teal), #5fe0d2); }
+  button:disabled { opacity: .4; cursor: default; }
+  .row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  label.chk { color: var(--mut); font-size: 14px; display: flex; gap: 6px; align-items: center; }
+  progress { width: 100%; height: 6px; margin-top: 12px; appearance: none; border: 0; border-radius: 3px; background: var(--line); }
+  progress::-webkit-progress-bar { background: var(--line); border-radius: 3px; }
+  progress::-webkit-progress-value { background: var(--teal); border-radius: 3px; }
+  .status { margin-top: 10px; font-weight: 600; min-height: 1.4em; }
+  .ok { color: var(--ok); } .warn { color: var(--org); } .err { color: var(--red); }
+  ul { margin: 6px 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  details { margin-top: 12px; }
+  summary { cursor: pointer; color: var(--mut); }
+  pre { background: rgba(0, 0, 0, .35); border: 1px solid var(--line); border-radius: 8px; padding: 8px; max-height: 220px;
+        overflow: auto; font-size: 12px; color: var(--mut); white-space: pre-wrap; word-break: break-all; }
+</style>
+</head>
+<body>
+<main>
+  <h1><span class="glow">SonaLuma</span><small>Firmware installer</small></h1>
+
+  <div class="card" id="nobrowser" hidden>
+    <h2>Use Chrome or Edge on a computer</h2>
+    <p>This page installs over USB, which only Chrome and Edge on Windows, Mac or Linux can do. It won't work on a phone, Safari or Firefox.</p>
+  </div>
+
+  <div class="card" id="s1">
+    <h2>1 · Pick what you're updating</h2>
+    <div class="devs" id="devs"></div>
+  </div>
+
+  <div class="card" id="s2">
+    <h2>2 · Install</h2>
+    <p>Plug it into this computer with a USB-C data cable, click <b>Install</b> and choose its port.</p>
+    <p class="mut" id="hint"></p>
+    <div class="row">
+      <button id="install">Install</button>
+      <label class="chk"><input type="checkbox" id="fresh"> Start fresh (erase its settings)</label>
+    </div>
+    <progress id="progress" max="1" value="0" hidden></progress>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="card">
+    <h2>Good to know</h2>
+    <ul>
+      <li><b>Updating a whole set:</b> install on the hub only (or box 1 if the set has no hub). The other boxes copy it from there over the air.</li>
+      <li><b>Settings are kept:</b> box number, hub switch, pairing, hotspot password and brightness stay as they are. Tick <i>Start fresh</i> only to reset a box completely; it then pairs again like a new box.</li>
+      <li><b>Box not found?</b> Try another cable. If it still doesn't show, hold the small <b>B</b> or <b>BOOT</b> button on the box's board while plugging it in, then click Install again.</li>
+    </ul>
+  </div>
+
+  <details>
+    <summary>Log</summary>
+    <pre id="log"></pre>
+  </details>
+</main>
+
+<script type="module">
+import { ESPLoader, Transport } from "https://cdn.jsdelivr.net/npm/esptool-js@0.7.0/bundle.js";
+
+const DEVICES = [
+  { id: "box", name: "SonaLuma box", desc: "A box or the hub", hint: "Use the USB-C port on the board inside the box." },
+  { id: "core2", name: "Core2 remote", desc: "The handheld remote", hint: "Use the USB-C port on the side of the remote. Turn it on first." },
+];
+
+const $ = (id) => document.getElementById(id);
+const log = (s) => { const b = $("log"); b.textContent += s + "\n"; b.scrollTop = b.scrollHeight; };
+const status = (text, cls = "") => { $("status").textContent = text; $("status").className = "status " + cls; };
+
+if (!("serial" in navigator)) {
+  $("nobrowser").hidden = false;
+  for (const id of ["s1", "s2"]) $(id).classList.add("dim");
+}
+
+let manifest = {};
+try { manifest = await (await fetch("firmware/manifest.json", { cache: "no-store" })).json(); } catch {}
+for (const d of DEVICES) {
+  const m = manifest[d.id];
+  const el = document.createElement("label");
+  el.className = "dev" + (m ? "" : " off");
+  el.innerHTML = `<input type="radio" name="dev" value="${d.id}" ${m ? "" : "disabled"}>
+    <b>${d.name}</b><span>${m ? `${d.desc} · V${m.version}` : "Not available"}</span>`;
+  $("devs").append(el);
+}
+document.querySelector("input[name=dev]:not(:disabled)")?.click();
+const device = () => DEVICES.find((d) => d.id === document.querySelector("input[name=dev]:checked")?.value);
+const showHint = () => { $("hint").textContent = device()?.hint || ""; };
+$("devs").addEventListener("change", showHint);
+showHint();
+
+$("install").addEventListener("click", async () => {
+  const d = device();
+  if (!d) return;
+  const m = manifest[d.id];
+  const fresh = $("fresh").checked;
+  if (fresh && !confirm(`Erase everything on the ${d.name}, including its settings and pairing?`)) return;
+  $("install").disabled = true;
+  let transport;
+  try {
+    status("Downloading firmware...");
+    const fileArray = [];
+    for (const p of m.parts) {
+      const r = await fetch(`firmware/${p.file}`, { cache: "no-store" });
+      if (!r.ok) throw new Error(`Couldn't download ${p.file} (${r.status})`);
+      fileArray.push({ data: new Uint8Array(await r.arrayBuffer()), address: p.address });
+    }
+
+    status("Choose the port in the list...");
+    const port = await navigator.serial.requestPort();
+
+    status("Connecting...");
+    transport = new Transport(port, false);
+    const loader = new ESPLoader({
+      transport, baudrate: 921600, romBaudrate: 115200,
+      terminal: { clean() {}, writeLine: log, write: (s) => log(s) },
+    });
+    const chip = await loader.main();
+    log(`Chip: ${chip}`);
+    if (loader.chip.CHIP_NAME !== m.chip) {
+      throw new Error(`That's an ${chip}, which doesn't match a ${d.name}. Pick the other device in step 1.`);
+    }
+
+    $("progress").hidden = false;
+    $("progress").value = 0;
+    status(fresh ? "Erasing... this takes up to a minute" : "Installing... keep the cable plugged in");
+    await loader.writeFlash({
+      fileArray, flashMode: "keep", flashFreq: "keep", flashSize: "keep", eraseAll: fresh, compress: true,
+      reportProgress: (i, written, total) => {
+        status(`Installing part ${i + 1} of ${fileArray.length}... keep the cable plugged in`);
+        $("progress").value = (i + written / total) / fileArray.length;
+      },
+    });
+    await loader.after("hard_reset");
+    $("progress").value = 1;
+    status(`Done: ${d.name} V${m.version}. It's restarting; you can unplug it.`, "ok");
+  } catch (e) {
+    log(String(e?.stack || e));
+    status(e?.name === "NotFoundError" ? "No port chosen." : `Install failed: ${e.message || e}`, "err");
+  } finally {
+    try { await transport?.disconnect(); } catch {}
+    $("install").disabled = false;
+  }
+});
+</script>
+</body>
+</html>
