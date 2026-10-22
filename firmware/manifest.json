@@ -1,5 +1,5 @@
 {
-  "box":   { "version": "3.10.2", "chip": "ESP32-S3", "parts": [
+  "box":   { "version": "3.10.3", "chip": "ESP32-S3", "parts": [
     { "file": "box/bootloader.bin", "address": 0 }, { "file": "box/partitions.bin", "address": 32768 },
     { "file": "box/boot_app0.bin", "address": 57344 }, { "file": "box/app.bin", "address": 65536 } ] },
   "core2": { "version": "1.9.3", "chip": "ESP32", "parts": [
