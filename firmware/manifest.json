@@ -22,7 +22,7 @@
     ]
   },
   "solo": {
-    "version": "2.0",
+    "version": "2.1",
     "chip": "ESP32-S3",
     "parts": [
       {
@@ -66,7 +66,7 @@
     ]
   },
   "core2": {
-    "version": "1.9.5",
+    "version": "1.9.6",
     "chip": "ESP32",
     "parts": [
       {
