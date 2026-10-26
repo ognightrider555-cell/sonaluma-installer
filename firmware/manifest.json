@@ -66,7 +66,7 @@
     ]
   },
   "core2": {
-    "version": "1.9.6",
+    "version": "1.9.7",
     "chip": "ESP32",
     "parts": [
       {
